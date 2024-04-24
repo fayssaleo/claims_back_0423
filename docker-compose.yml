@@ -1,0 +1,80 @@
+version: "3.7"
+
+services:
+    # PHP-FPM - Service
+    claims:
+        build:
+            context: .
+            dockerfile: Dockerfile
+
+        container_name: claims
+        restart: unless-stopped
+        tty: true
+        working_dir: /var/www
+        depends_on:
+            - claims_db
+        volumes:
+            - ./:/var/www
+            - ./docker-files/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+
+        networks:
+            - claims-network
+
+    # NGINX - Service
+    claims_webserver:
+        image: nginx:alpine
+        container_name: claims_webserver
+        restart: unless-stopped
+        tty: true
+
+        ports:
+            - "9008:80"
+            - "9009:443"
+
+        volumes:
+            - ./:/var/www
+            - ./docker-files/nginx/conf.d/:/etc/nginx/conf.d/
+
+        networks:
+            - claims-network
+
+    # MariaDB - Service
+    claims_db:
+        image: mysql:5.7
+        container_name: claims_db
+        restart: unless-stopped
+        tty: true
+
+        ports:
+            - "3310:3306"
+
+        environment:
+            MYSQL_DATABASE: "claims"
+            MYSQL_ROOT_PASSWORD: "claims"
+            MYSQL_PASSWORD: "claims"
+            MYSQL_USER: "claims"
+        volumes:
+            - ./docker-files/mysql:/var/lib/mysql
+        networks:
+            - claims-network
+
+    claims_phpmyadmin:
+        container_name: claims_phpmyadmin
+        depends_on:
+            - claims_db
+        image: phpmyadmin/phpmyadmin
+        restart: always
+        ports:
+            - "9010:80"
+        environment:
+            PMA_HOST: claims_db
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+        networks:
+            - claims-network
+
+# Networks
+networks:
+    claims-network:
+        driver: bridge

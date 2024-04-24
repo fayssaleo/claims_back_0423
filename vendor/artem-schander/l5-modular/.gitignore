@@ -1,0 +1,7 @@
+vendor
+build
+coverage.clover
+composer.lock
+.phpunit.result.cache
+.lvimrc
+.idea
